@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Heart Risk Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f7f8; --surface:#ffffff; --ink:#14181c; --ink-soft:#5b6470;
+    --line:#dfe3e6; --accent:#b3261e; --accent-ink:#ffffff;
+    --low:#2f7a52; --mod:#b8860b; --high:#b3261e;
+    --radius:10px;
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#12151a; --surface:#181c22; --ink:#eef1f4; --ink-soft:#9aa4ae;
+      --line:#2a2f36; --accent:#ef5350; --accent-ink:#12151a;
+      --low:#4caf7d; --mod:#e0b23f; --high:#ef5350;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#12151a; --surface:#181c22; --ink:#eef1f4; --ink-soft:#9aa4ae;
+    --line:#2a2f36; --accent:#ef5350; --accent-ink:#12151a;
+    --low:#4caf7d; --mod:#e0b23f; --high:#ef5350;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:640px; margin:0 auto; padding:56px 24px 80px;}
+  header.hero{margin-bottom:40px;}
+  header.hero h1{font-size:28px; font-weight:600; letter-spacing:-0.01em; margin:0 0 8px;}
+  header.hero p{color:var(--ink-soft); font-size:15px; line-height:1.55; margin:0; max-width:52ch;}
+
+  .group{margin-bottom:32px;}
+  .group h2{font-size:13px; font-weight:600; color:var(--ink-soft); margin:0 0 14px; text-transform:none;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:520px){.grid{grid-template-columns:1fr;}}
+
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field label{font-size:13px; color:var(--ink-soft);}
+  .field input, .field select{
+    font:inherit; font-size:15px; color:var(--ink); background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--radius); padding:10px 12px;
+    appearance:none; -webkit-appearance:none;
+  }
+  .field select{
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235b6470'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:right 12px center; padding-right:30px;
+  }
+  .field input:focus-visible, .field select:focus-visible{
+    outline:2px solid var(--accent); outline-offset:1px;
+  }
+
+  hr.div{border:none; border-top:1px solid var(--line); margin:32px 0;}
+
+  .actions{display:flex; align-items:center; gap:16px; margin-top:8px;}
+  button.primary{
+    font:inherit; font-size:15px; font-weight:600; color:var(--accent-ink); background:var(--accent);
+    border:none; border-radius:var(--radius); padding:12px 22px; cursor:pointer;
+  }
+  button.primary:hover{opacity:0.92;}
+  button.ghost{
+    font:inherit; font-size:14px; color:var(--ink-soft); background:none; border:none;
+    cursor:pointer; padding:4px; text-decoration:underline; text-underline-offset:3px;
+  }
+
+  .result{margin-top:44px; padding-top:36px; border-top:1px solid var(--line);}
+  .result-number{font-family:'Fraunces',serif; font-size:56px; font-weight:600; line-height:1;}
+  .result-label{font-size:15px; font-weight:600; margin-top:6px;}
+  .bar{height:6px; background:var(--line); border-radius:4px; margin:16px 0 14px; overflow:hidden;}
+  .bar-fill{height:100%; width:0%; background:var(--accent); transition:width 0.5s ease;}
+  .result-note{font-size:14px; color:var(--ink-soft); line-height:1.6; margin:0;}
+
+  footer{margin-top:56px; font-size:12.5px; color:var(--ink-soft); line-height:1.7;}
+  footer p{margin:0 0 8px;}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="hero">
+    <h1>Heart risk assessment</h1>
+    <p>Enter a patient's clinical values to estimate the statistical likelihood of heart disease, based on a model trained on the Cleveland Heart Disease dataset.</p>
+  </header>
+
+  <form id="f">
+    <div class="group">
+      <h2>Patient</h2>
+      <div class="grid">
+        <div class="field"><label for="age">Age</label>
+          <input type="number" id="age" name="age" min="18" max="100" value="54" required></div>
+        <div class="field"><label for="sex">Sex</label>
+          <select id="sex" name="sex" required>
+            <option value="1">Male</option><option value="0">Female</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Vitals</h2>
+      <div class="grid">
+        <div class="field"><label for="trestbps">Resting blood pressure (mm Hg)</label>
+          <input type="number" id="trestbps" name="trestbps" min="80" max="220" value="130" required></div>
+        <div class="field"><label for="chol">Cholesterol (mg/dl)</label>
+          <input type="number" id="chol" name="chol" min="100" max="600" value="245" required></div>
+        <div class="field"><label for="thalach">Max heart rate achieved</label>
+          <input type="number" id="thalach" name="thalach" min="60" max="220" value="150" required></div>
+        <div class="field"><label for="fbs">Fasting blood sugar &gt; 120 mg/dl</label>
+          <select id="fbs" name="fbs" required>
+            <option value="0">No</option><option value="1">Yes</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Symptoms</h2>
+      <div class="grid">
+        <div class="field"><label for="cp">Chest pain type</label>
+          <select id="cp" name="cp" required>
+            <option value="0">Typical angina</option>
+            <option value="1">Atypical angina</option>
+            <option value="2">Non-anginal pain</option>
+            <option value="3">Asymptomatic</option>
+          </select></div>
+        <div class="field"><label for="exang">Exercise-induced angina</label>
+          <select id="exang" name="exang" required>
+            <option value="0">No</option><option value="1">Yes</option>
+          </select></div>
+        <div class="field"><label for="oldpeak">ST depression (oldpeak)</label>
+          <input type="number" id="oldpeak" name="oldpeak" min="0" max="7" step="0.1" value="1.0" required></div>
+        <div class="field"><label for="slope">ST segment slope</label>
+          <select id="slope" name="slope" required>
+            <option value="0">Upsloping</option>
+            <option value="1">Flat</option>
+            <option value="2">Downsloping</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Cardiac test results</h2>
+      <div class="grid">
+        <div class="field"><label for="restecg">Resting ECG</label>
+          <select id="restecg" name="restecg" required>
+            <option value="0">Normal</option>
+            <option value="1">ST-T wave abnormality</option>
+            <option value="2">Left ventricular hypertrophy</option>
+          </select></div>
+        <div class="field"><label for="ca">Major vessels colored by fluoroscopy</label>
+          <select id="ca" name="ca" required>
+            <option value="0">0</option><option value="1">1</option>
+            <option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option>
+          </select></div>
+        <div class="field"><label for="thal">Thalassemia result</label>
+          <select id="thal" name="thal" required>
+            <option value="0">Normal</option>
+            <option value="1">Fixed defect</option>
+            <option value="2">Reversible defect</option>
+            <option value="3">Other / unspecified</option>
+          </select></div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" type="submit">Assess risk</button>
+      <button class="ghost" type="button" id="sample">Use sample values</button>
+    </div>
+  </form>
+
+  <section class="result" id="result" hidden>
+    <div class="result-number" id="resultPct">—</div>
+    <div class="result-label" id="resultLabel"></div>
+    <div class="bar"><div class="bar-fill" id="barFill"></div></div>
+    <p class="result-note" id="resultNote"></p>
+  </section>
+
+  <footer>
+    <p>Model: logistic regression trained on the UCI Cleveland Heart Disease dataset (303 patients), 5-fold cross-validated accuracy ≈ 84%, AUC ≈ 0.89.</p>
+    <p>This tool is for educational purposes only, is not a medical device, and does not replace evaluation by a qualified clinician.</p>
+  </footer>
+
+</div>
+
+<script>
+  const COLUMNS  = ['age','sex','cp','trestbps','chol','fbs','restecg','thalach','exang','oldpeak','slope','ca','thal'];
+  const MEAN     = [54.366337,0.683168,0.966997,131.623762,246.264026,0.148515,0.528053,149.646865,0.326733,1.039604,1.399340,0.729373,2.313531];
+  const SCALE    = [9.067102,0.465241,1.030348,17.509178,51.745151,0.355610,0.524991,22.867333,0.469019,1.159157,0.615208,1.020918,0.611265];
+  const COEF     = [-0.055685,-0.769249,0.843781,-0.318295,-0.217441,0.013283,0.232471,0.502325,-0.450731,-0.600419,0.344056,-0.752554,-0.531146];
+  const INTERCEPT = 0.125300;
+
+  const SAMPLE = {age:41,sex:0,cp:1,trestbps:130,chol:204,fbs:0,restecg:0,thalach:172,exang:0,oldpeak:1.4,slope:2,ca:0,thal:2};
+
+  const form = document.getElementById('f');
+  const result = document.getElementById('result');
+
+  function sigmoid(z){ return 1/(1+Math.exp(-z)); }
+
+  function predict(values){
+    let z = INTERCEPT;
+    COLUMNS.forEach((c,i)=>{ z += COEF[i] * ((values[c]-MEAN[i])/SCALE[i]); });
+    return sigmoid(z);
+  }
+
+  function render(p){
+    const pct = Math.round(p*100);
+    document.getElementById('resultPct').textContent = pct + '%';
+    document.getElementById('barFill').style.width = pct + '%';
+    const label = document.getElementById('resultLabel');
+    const note = document.getElementById('resultNote');
+    let tier, color, msg;
+    if (p < 0.33){ tier='Lower likelihood'; color='var(--low)';
+      msg='These values pattern most closely with the dataset\'s lower-risk cases.'; }
+    else if (p < 0.66){ tier='Moderate likelihood'; color='var(--mod)';
+      msg='These values fall in a mixed zone in the training data — worth discussing with a clinician.'; }
+    else { tier='Higher likelihood'; color='var(--high)';
+      msg='These values pattern most closely with the dataset\'s higher-risk cases.'; }
+    label.textContent = tier;
+    label.style.color = color;
+    document.getElementById('barFill').style.background = color;
+    note.textContent = msg;
+    result.hidden = false;
+    result.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    const fd = new FormData(form);
+    const values = {};
+    COLUMNS.forEach(c=>{ values[c] = parseFloat(fd.get(c)); });
+    render(predict(values));
+  });
+
+  document.getElementById('sample').addEventListener('click', ()=>{
+    Object.keys(SAMPLE).forEach(k=>{ form.elements[k].value = SAMPLE[k]; });
+  });
+</script>
+</body>
+</html>
